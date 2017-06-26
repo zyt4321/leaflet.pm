@@ -1,4 +1,6 @@
-L.PM.Edit.Line = L.PM.Edit.extend({
+import Edit from './L.PM.Edit';
+
+Edit.Line = Edit.extend({
     initialize(layer) {
         this._layer = layer;
         this._enabled = false;
@@ -35,13 +37,15 @@ L.PM.Edit.Line = L.PM.Edit.extend({
         this._initMarkers();
 
         // if polygon gets removed from map, disable edit mode
-        this._layer.on('remove', (e) => {
-            this.disable(e.target);
-        });
+        this._layer.on('remove', this._onLayerRemove, this);
 
         if(this.options.draggable) {
             this._initDraggableLayer();
         }
+    },
+
+    _onLayerRemove(e) {
+        this.disable(e.target);
     },
 
     enabled() {
@@ -65,6 +69,9 @@ L.PM.Edit.Line = L.PM.Edit.extend({
         poly.off('mousedown');
         poly.off('mouseup');
 
+        // remove onRemove listener
+        this._layer.off('remove', this._onLayerRemove);
+
         // remove draggable class
         const el = poly._path;
         L.DomUtil.removeClass(el, 'leaflet-pm-draggable');
@@ -82,6 +89,7 @@ L.PM.Edit.Line = L.PM.Edit.extend({
 
         // add markerGroup to map, markerGroup includes regular and middle markers
         this._markerGroup = new L.LayerGroup();
+        this._markerGroup._pmTempLayer = true;
         map.addLayer(this._markerGroup);
 
         // create marker for each coordinate

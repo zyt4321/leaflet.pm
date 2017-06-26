@@ -168,7 +168,7 @@ const SnapMixin = {
         layers = layers.filter(layer => this._layer !== layer);
 
         // also remove everything that has no coordinates yet
-        layers = layers.filter(layer => layer._latlng || layer._latlngs.length > 0);
+        layers = layers.filter(layer => layer._latlng || (layer._latlngs && layer._latlngs.length > 0));
 
         // finally remove everything that's leaflet.pm specific temporary stuff
         layers = layers.filter(layer => !layer._pmTempLayer);
@@ -304,3 +304,5 @@ const SnapMixin = {
         return map.latLngToLayerPoint(latlngA).distanceTo(map.latLngToLayerPoint(latlngB));
     },
 };
+
+export default SnapMixin;

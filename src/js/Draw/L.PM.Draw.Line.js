@@ -1,4 +1,6 @@
-L.PM.Draw.Line = L.PM.Draw.extend({
+import Draw from './L.PM.Draw';
+
+Draw.Line = Draw.extend({
     initialize(map) {
         this._map = map;
         this._shape = 'Line';
@@ -14,6 +16,7 @@ L.PM.Draw.Line = L.PM.Draw.extend({
 
         // create a new layergroup
         this._layerGroup = new L.LayerGroup();
+        this._layerGroup._pmTempLayer = true;
         this._layerGroup.addTo(this._map);
 
         // this is the polyLine that'll make up the polygon

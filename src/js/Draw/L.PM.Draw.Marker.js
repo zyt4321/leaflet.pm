@@ -1,4 +1,6 @@
-L.PM.Draw.Marker = L.PM.Draw.extend({
+import Draw from './L.PM.Draw';
+
+Draw.Marker = Draw.extend({
     initialize(map) {
         this._map = map;
         this._shape = 'Marker';
@@ -19,7 +21,7 @@ L.PM.Draw.Marker = L.PM.Draw.extend({
         this._map.pm.Toolbar.toggleButton(this.toolbarButtonName, true);
 
         // this is the hintmarker on the mouse cursor
-        this._hintMarker = L.marker([0, 0]);
+        this._hintMarker = L.marker([0, 0], this.options.markerStyle);
         this._hintMarker._pmTempLayer = true;
         this._hintMarker.addTo(this._map);
 
@@ -31,7 +33,7 @@ L.PM.Draw.Marker = L.PM.Draw.extend({
 
         // enable edit mode for existing markers
         this._map.eachLayer((layer) => {
-            if(layer instanceof L.Marker) {
+            if(layer instanceof L.Marker && layer.pm) {
                 layer.pm.enable();
             }
         });
@@ -53,10 +55,13 @@ L.PM.Draw.Marker = L.PM.Draw.extend({
 
         // disable dragging and removing for all markers
         this._map.eachLayer((layer) => {
-            if(layer instanceof L.Marker && !layer._pmTempLayer) {
+            if(layer instanceof L.Marker && layer.pm && !layer._pmTempLayer) {
                 layer.pm.disable();
             }
         });
+
+        // toggle the draw button of the Toolbar in case drawing mode got disabled without the button
+        this._map.pm.Toolbar.toggleButton(this.toolbarButtonName, false);
 
         // change enabled state
         this._enabled = false;

@@ -1,4 +1,6 @@
-L.PM.Draw.Circle = L.PM.Draw.extend({
+import Draw from './L.PM.Draw';
+
+Draw.Circle = Draw.extend({
     initialize(map) {
         this._map = map;
         this._shape = 'Circle';
@@ -16,6 +18,7 @@ L.PM.Draw.Circle = L.PM.Draw.extend({
 
         // create a new layergroup
         this._layerGroup = new L.LayerGroup();
+        this._layerGroup._pmTempLayer = true;
         this._layerGroup.addTo(this._map);
 
         // this is the circle we want to draw

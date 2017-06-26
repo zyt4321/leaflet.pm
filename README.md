@@ -19,7 +19,7 @@ As we are always using the latest leaflet version in a big production app, I wil
 #### Install via npm
 `npm install leaflet.pm --save`
 
-#### Install via Bower
+#### Install via Bower (DEPRECATED - leaflet.pm is no longer supporting bower since 0.17.0)
 `bower install leaflet.pm --save`
 
 #### Install Manually
@@ -28,10 +28,10 @@ Download the latest release [here](https://github.com/codeofsumit/leaflet.pm/rel
 
 #### Include via CDN
 CSS
-`<link rel="stylesheet" href="https://unpkg.com/leaflet.pm@0.15.0/dist/leaflet.pm.css" />`
+`<link rel="stylesheet" href="https://unpkg.com/leaflet.pm@0.17.0/dist/leaflet.pm.css" />`
 
 JS
-`<script src="https://unpkg.com/leaflet.pm@0.15.0/dist/leaflet.pm.min.js"></script>`
+`<script src="https://unpkg.com/leaflet.pm@0.17.0/dist/leaflet.pm.min.js"></script>`
 
 #### Include as ES6 Module
 `import 'leaflet.pm';`  
@@ -44,7 +44,10 @@ JS
 
 #### Init Leaflet.PM
 Just include `leaflet.pm.min.js` right after Leaflet. It initializes itself.
-
+If you want certain layers to be ignored by leaflet.pm, pass `pmIgnore: true` to their options when creating them. Example:
+```
+L.marker([51.50915, -0.096112], {pmIgnore: true}).addTo(map);
+```
 
 ##### Leaflet.PM Toolbar
 This plugin comes with an optional toolbar to give you buttons to use the various features.
@@ -110,7 +113,7 @@ map.pm.enableDraw('Line', options);
 map.pm.enableDraw('Marker', options);
 map.pm.enableDraw('Circle', options);
 
-// get array of all available shapes (currently Poly and Line)
+// get array of all available shapes
 map.pm.Draw.getShapes()
 
 // listen to when drawing mode gets enabled
@@ -190,6 +193,9 @@ map.pm.toggleGlobalEditMode();
 ```
 // toggle global removal mode
 map.pm.toggleGlobalRemovalMode();
+
+// listen to removal of layers that are NOT ignored and NOT helpers by leaflet.pm
+map.on('pm:remove', function(e) {//...})
 ```
 
 ### Customize Style
