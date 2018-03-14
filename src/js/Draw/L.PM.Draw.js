@@ -5,13 +5,13 @@ const Draw = L.Class.extend({
     options: {
         snappable: true,
         snapDistance: 20,
+        cursorMarker: true,
         finishOnDoubleClick: false,
-        templineStyle: {
-            color: 'red',
-        },
+        finishOn: null,
+        allowSelfIntersection: true,
+        templineStyle: {},
         hintlineStyle: {
-            color: 'red',
-            dashArray: [5, 5],
+            dashArray: '5,5',
         },
         markerStyle: {
             draggable: true,
@@ -22,7 +22,7 @@ const Draw = L.Class.extend({
         this._map = map;
 
         // define all possible shapes that can be drawn
-        this.shapes = ['Poly', 'Line', 'Marker', 'Circle'];
+        this.shapes = ['Marker', 'Line', 'Poly', 'Rectangle', 'Circle', 'Cut'];
 
         // initiate drawing class for our shapes
         this.shapes.forEach((shape) => {
@@ -37,7 +37,7 @@ const Draw = L.Class.extend({
         return this.shapes;
     },
     enable(shape, options) {
-        if(!shape) {
+        if (!shape) {
             throw new Error(`Error: Please pass a shape as a parameter. Possible shapes are: ${this.getShapes().join(',')}`);
         }
 

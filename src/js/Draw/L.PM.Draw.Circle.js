@@ -29,7 +29,7 @@ Draw.Circle = Draw.extend({
         // this is the marker in the center of the circle
         this._centerMarker = L.marker([0, 0], {
             icon: L.divIcon({ className: 'marker-icon' }),
-            draggable: true,
+            draggable: false,
             zIndexOffset: 100,
         });
         this._centerMarker._pmTempLayer = true;
@@ -43,7 +43,7 @@ Draw.Circle = Draw.extend({
         this._layerGroup.addLayer(this._hintMarker);
 
         // show the hintmarker if the option is set
-        if(this.options.cursorMarker) {
+        if (this.options.cursorMarker) {
             L.DomUtil.addClass(this._hintMarker._icon, 'visible');
         }
 
@@ -62,7 +62,7 @@ Draw.Circle = Draw.extend({
         this._map.on('mousemove', this._syncHintMarker, this);
 
         // fire drawstart event
-        this._map.fire('pm:drawstart', { shape: this._shape });
+        this._map.fire('pm:drawstart', { shape: this._shape, workingLayer: this._layer });
 
         // toggle the draw button of the Toolbar in case drawing mode got enabled without the button
         this._map.pm.Toolbar.toggleButton(this.toolbarButtonName, true);
@@ -75,7 +75,7 @@ Draw.Circle = Draw.extend({
         // disable drawing mode
 
         // cancel, if drawing mode isn't event enabled
-        if(!this._enabled) {
+        if (!this._enabled) {
             return;
         }
 
@@ -99,7 +99,7 @@ Draw.Circle = Draw.extend({
         this._map.pm.Toolbar.toggleButton(this.toolbarButtonName, false);
 
         // cleanup snapping
-        if(this.options.snappable) {
+        if (this.options.snappable) {
             this._cleanupSnapping();
         }
     },
@@ -107,7 +107,7 @@ Draw.Circle = Draw.extend({
         return this._enabled;
     },
     toggle(options) {
-        if(this.enabled()) {
+        if (this.enabled()) {
             this.disable();
         } else {
             this.enable(options);
@@ -132,7 +132,7 @@ Draw.Circle = Draw.extend({
         this._hintMarker.setLatLng(e.latlng);
 
         // if snapping is enabled, do it
-        if(this.options.snappable) {
+        if (this.options.snappable) {
             const fakeDragEvent = e;
             fakeDragEvent.target = this._hintMarker;
             this._handleSnapping(fakeDragEvent);
@@ -141,7 +141,7 @@ Draw.Circle = Draw.extend({
     _placeCenterMarker(e) {
         // assign the coordinate of the click to the hintMarker, that's necessary for
         // mobile where the marker can't follow a cursor
-        if(!this._hintMarker._snapped) {
+        if (!this._hintMarker._snapped) {
             this._hintMarker.setLatLng(e.latlng);
         }
 
@@ -158,12 +158,18 @@ Draw.Circle = Draw.extend({
     _placeCircleCenter() {
         const latlng = this._centerMarker.getLatLng();
 
-        if(latlng) {
+        if (latlng) {
             this._layer.setLatLng(latlng);
 
             // sync the hintline with hint marker
             this._hintMarker.on('move', this._syncHintLine, this);
             this._hintMarker.on('move', this._syncCircleRadius, this);
+
+            this._layer.fire('pm:centerplaced', {
+                shape: this._shape,
+                workingLayer: this._layer,
+                latlng,
+            });
         }
     },
     _finishShape() {

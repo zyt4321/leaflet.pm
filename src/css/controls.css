@@ -31,6 +31,10 @@
     background-image: url('../assets/icons/circle.png');
     background-size: 90%;
 }
+.leaflet-pm-toolbar .leaflet-pm-icon-rectangle {
+    background-image: url('../assets/icons/rectangle.png');
+    background-size: 90%;
+}
 .leaflet-pm-toolbar .leaflet-pm-icon-drag {
     /*background-image: url('../assets/icons/drag.png');*/
 }
@@ -40,6 +44,11 @@
 }
 .leaflet-pm-toolbar .leaflet-pm-icon-edit {
     background-image: url('../assets/icons/edit.png');
+    background-size: 80%;
+    background-position: 4px center;
+}
+.leaflet-pm-toolbar .leaflet-pm-icon-cut {
+    background-image: url('../assets/icons/cut.png');
     background-size: 80%;
     background-position: 4px center;
 }

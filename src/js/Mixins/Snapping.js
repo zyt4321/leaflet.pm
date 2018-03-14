@@ -2,16 +2,26 @@ const SnapMixin = {
     _initSnappableMarkers() {
         this.options.snapDistance = this.options.snapDistance || 30;
 
-        this._markers.forEach((marker) => {
+        if (this.isPolygon()) {
+            // coords is a multidimansional array, handle all rings
+            this._markers.map(this._assignEvents, this);
+        } else {
+            // coords is one dimensional, handle the ring
+            this._assignEvents(this._markers);
+        }
+
+        this._layer.off('pm:dragstart', this._unsnap, this);
+        this._layer.on('pm:dragstart', this._unsnap, this);
+    },
+    _assignEvents(markerArr) {
+        // loop through marker array and assign events to the markers
+        markerArr.forEach((marker) => {
             marker.off('drag', this._handleSnapping, this);
             marker.on('drag', this._handleSnapping, this);
 
             marker.off('dragend', this._cleanupSnapping, this);
             marker.on('dragend', this._cleanupSnapping, this);
         });
-
-        this._layer.off('pm:dragstart', this._unsnap, this);
-        this._layer.on('pm:dragstart', this._unsnap, this);
     },
     _unsnap() {
         // delete the last snap
@@ -22,27 +32,36 @@ const SnapMixin = {
         // meanwhile, new layers could've been added to the map
         delete this._snapList;
 
-        if(this.debugIndicatorLines) {
+        // remove map event
+        this._map.off('pm:remove', this._handleSnapLayerRemoval, this);
+
+        if (this.debugIndicatorLines) {
             this.debugIndicatorLines.forEach((line) => {
                 line.remove();
             });
         }
     },
+    _handleSnapLayerRemoval({ layer }) {
+        // find the layers index in snaplist
+        const index = this._snapList.findIndex(e => e._leaflet_id === layer._leaflet_id);
+        // remove it from the snaplist
+        this._snapList.splice(index, 1);
+    },
     _handleSnapping(e) {
         // if snapping is disabled via holding ALT during drag, stop right here
-        if(e.originalEvent.altKey) {
+        if (e.originalEvent.altKey) {
             return false;
         }
 
         // create a list of polygons that the marker could snap to
         // this isn't inside a movestart/dragstart callback because middlemarkers are initialized
         // after dragstart/movestart so it wouldn't fire for them
-        if(this._snapList === undefined) {
+        if (this._snapList === undefined) {
             this._createSnapList(e);
         }
 
         // if there are no layers to snap to, stop here
-        if(this._snapList.length <= 0) {
+        if (this._snapList.length <= 0) {
             return false;
         }
 
@@ -55,7 +74,7 @@ const SnapMixin = {
 
         // find the final latlng that we want to snap to
         let snapLatLng;
-        if(!isMarker) {
+        if (!isMarker) {
             snapLatLng = this._checkPrioritiySnapping(closestLayer);
         } else {
             snapLatLng = closestLayer.latlng;
@@ -73,20 +92,27 @@ const SnapMixin = {
             layerInteractedWith: closestLayer.layer, // for lack of a better property name
         };
 
-        if(closestLayer.distance < minDistance) {
+        if (closestLayer.distance < minDistance) {
             // snap the marker
             marker.setLatLng(snapLatLng);
 
             marker._snapped = true;
 
-            // check if the snapping position differs from the last snap
-            if(this._snapLatLng !== snapLatLng) {
-                // if yes, save it and fire the pm:snap event
+            const triggerSnap = () => {
                 this._snapLatLng = snapLatLng;
                 marker.fire('pm:snap', eventInfo);
                 this._layer.fire('pm:snap', eventInfo);
+            };
+
+            // check if the snapping position differs from the last snap
+            // Thanks Max & car2go Team
+            const a = this._snapLatLng || {};
+            const b = snapLatLng || {};
+
+            if (a.lat !== b.lat || a.lng !== b.lng) {
+                triggerSnap();
             }
-        } else if(this._snapLatLng) {
+        } else if (this._snapLatLng) {
             // no more snapping
 
             // if it was previously snapped...
@@ -134,7 +160,7 @@ const SnapMixin = {
 
         // if C is closer to the closestVertexLatLng (A or B) than the snapDistance,
         // the closestVertexLatLng has priority over C as the snapping point.
-        if(shortestDistance < priorityDistance) {
+        if (shortestDistance < priorityDistance) {
             snapLatlng = closestVertexLatLng;
         } else {
             snapLatlng = C;
@@ -152,11 +178,14 @@ const SnapMixin = {
         // find all layers that are or inherit from Polylines... and markers that are not
         // temporary markers of polygon-edits
         map.eachLayer((layer) => {
-            if(layer instanceof L.Polyline || layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+            if (layer instanceof L.Polyline || layer instanceof L.Marker || layer instanceof L.CircleMarker) {
                 layers.push(layer);
 
+                map.off('pm:remove', this._handleSnapLayerRemoval, this);
+                map.on('pm:remove', this._handleSnapLayerRemoval, this);
+
                 // this is for debugging
-                const debugLine = L.polyline([], { color: 'red' });
+                const debugLine = L.polyline([], { color: 'red', pmIgnore: true });
                 debugIndicatorLines.push(debugLine);
 
                 // uncomment 👇 this line to show helper lines for debugging
@@ -174,7 +203,7 @@ const SnapMixin = {
         layers = layers.filter(layer => !layer._pmTempLayer);
 
         // save snaplist from layers and the other snap layers added from other classes/scripts
-        if(this._otherSnapLayers) {
+        if (this._otherSnapLayers) {
             this._snapList = layers.concat(this._otherSnapLayers);
         } else {
             this._snapList = layers;
@@ -195,7 +224,7 @@ const SnapMixin = {
             this.debugIndicatorLines[index].setLatLngs([latlng, results.latlng]);
 
             // save the info if it doesn't exist or if the distance is smaller than the previous one
-            if(closestLayer.distance === undefined || results.distance < closestLayer.distance) {
+            if (closestLayer.distance === undefined || results.distance < closestLayer.distance) {
                 closestLayer = results;
                 closestLayer.layer = layer;
             }
@@ -220,13 +249,13 @@ const SnapMixin = {
         let coords;
 
         // the coords of the layer
-        if(isPolygon) {
+        if (isPolygon) {
             // polygon
             coords = layer.getLatLngs()[0];
-        } else if(isPolyline) {
+        } else if (isPolyline) {
             // polyline
             coords = layer.getLatLngs();
-        } else if(isMarker) {
+        } else if (isMarker) {
             // marker
             coords = layer.getLatLng();
 
@@ -250,7 +279,7 @@ const SnapMixin = {
             let nextIndex;
 
             // and the next coord (B) as points
-            if(isPolygon) {
+            if (isPolygon) {
                 nextIndex = index + 1 === coords.length ? 0 : index + 1;
             } else {
                 nextIndex = index + 1 === coords.length ? undefined : index + 1;
@@ -258,12 +287,12 @@ const SnapMixin = {
 
             const B = coords[nextIndex];
 
-            if(B) {
+            if (B) {
                 // calc the distance between P and AB-segment
                 const distance = this._getDistanceToSegment(map, P, A, B);
 
                 // is the distance shorter than the previous one? Save it and the segment
-                if(shortestDistance === undefined || distance < shortestDistance) {
+                if (shortestDistance === undefined || distance < shortestDistance) {
                     shortestDistance = distance;
                     closestSegment = [A, B];
                 }

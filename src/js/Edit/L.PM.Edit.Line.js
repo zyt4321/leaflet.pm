@@ -1,3 +1,4 @@
+import kinks from '@turf/kinks';
 import Edit from './L.PM.Edit';
 
 Edit.Line = Edit.extend({
@@ -7,24 +8,24 @@ Edit.Line = Edit.extend({
     },
 
     toggleEdit(options) {
-        if(!this.enabled()) {
+        if (!this.enabled()) {
             this.enable(options);
         } else {
             this.disable();
         }
     },
 
-    enable(options = {}) {
-        this.options = options;
+    enable(options) {
+        L.Util.setOptions(this, options);
 
         this._map = this._layer._map;
 
         // cancel when map isn't available, this happens when the polygon is removed before this fires
-        if(!this._map) {
+        if (!this._map) {
             return;
         }
 
-        if(!this.enabled()) {
+        if (!this.enabled()) {
             // if it was already enabled, disable first
             // we don't block enabling again because new options might be passed
             this.disable();
@@ -39,8 +40,16 @@ Edit.Line = Edit.extend({
         // if polygon gets removed from map, disable edit mode
         this._layer.on('remove', this._onLayerRemove, this);
 
-        if(this.options.draggable) {
+        if (!this.options.allowSelfIntersection) {
+            this._layer.on('pm:vertexremoved', this._handleSelfIntersectionOnVertexRemoval, this);
+        }
+
+        if (this.options.draggable) {
             this._initDraggableLayer();
+        }
+
+        if (!this.options.allowSelfIntersection) {
+            this._handleLayerStyle();
         }
     },
 
@@ -54,12 +63,12 @@ Edit.Line = Edit.extend({
 
     disable(poly = this._layer) {
         // if it's not enabled, it doesn't need to be disabled
-        if(!this.enabled()) {
+        if (!this.enabled()) {
             return false;
         }
 
         // prevent disabling if polygon is being dragged
-        if(poly.pm._dragging) {
+        if (poly.pm._dragging) {
             return false;
         }
         poly.pm._enabled = false;
@@ -72,18 +81,81 @@ Edit.Line = Edit.extend({
         // remove onRemove listener
         this._layer.off('remove', this._onLayerRemove);
 
+        if (!this.options.allowSelfIntersection) {
+            this._layer.off('pm:vertexremoved', this._handleSelfIntersectionOnVertexRemoval);
+        }
+
         // remove draggable class
-        const el = poly._path;
+        const el = poly._path ? poly._path : this._layer._renderer._container;
         L.DomUtil.removeClass(el, 'leaflet-pm-draggable');
+
+        // remove invalid class if layer has self intersection
+        if (this.hasSelfIntersection()) {
+            L.DomUtil.removeClass(el, 'leaflet-pm-invalid');
+        }
+
+        if (this._layerEdited) {
+            this._layer.fire('pm:update', {});
+        }
+        this._layerEdited = false;
 
         return true;
     },
 
+    hasSelfIntersection() {
+        // check for self intersection of the layer and return true/false
+        const selfIntersection = kinks(this._layer.toGeoJSON());
+        return selfIntersection.features.length > 0;
+    },
+
+    _handleSelfIntersectionOnVertexRemoval() {
+        // check for selfintersection again (mainly to reset the style)
+        this._handleLayerStyle(true);
+
+        if (this.hasSelfIntersection()) {
+            // reset coordinates
+            this._layer.setLatLngs(this._coordsBeforeEdit);
+            this._coordsBeforeEdit = null;
+
+            // re-enable markers for the new coords
+            this._initMarkers();
+        }
+    },
+
+    _handleLayerStyle(flash) {
+        const el = this._layer._path ? this._layer._path : this._layer._renderer._container;
+
+        if (this.hasSelfIntersection()) {
+            if (L.DomUtil.hasClass(el, 'leaflet-pm-invalid')) {
+                return;
+            }
+
+            // if it does self-intersect, mark or flash it red
+            if (flash) {
+                L.DomUtil.addClass(el, 'leaflet-pm-invalid');
+                window.setTimeout(() => {
+                    L.DomUtil.removeClass(el, 'leaflet-pm-invalid');
+                }, 200);
+            } else {
+                L.DomUtil.addClass(el, 'leaflet-pm-invalid');
+            }
+
+            // fire intersect event
+            this._layer.fire('pm:intersect', {
+                intersection: kinks(this._layer.toGeoJSON()),
+            });
+        } else {
+            // if not, reset the style to the default color
+            L.DomUtil.removeClass(el, 'leaflet-pm-invalid');
+        }
+    },
+
     _initMarkers() {
         const map = this._map;
+        const coords = this._layer.getLatLngs();
 
         // cleanup old ones first
-        if(this._markerGroup) {
+        if (this._markerGroup) {
             this._markerGroup.clearLayers();
         }
 
@@ -92,40 +164,57 @@ Edit.Line = Edit.extend({
         this._markerGroup._pmTempLayer = true;
         map.addLayer(this._markerGroup);
 
-        // create marker for each coordinate
-        const coords = this._layer._latlngs;
+        // handle coord-rings (outer, inner, etc)
+        const handleRing = (coordsArr) => {
+            // the marker array, it includes only the markers of vertexes (no middle markers)
+            const ringArr = coordsArr.map(this._createMarker, this);
 
-        // the marker array, it includes only the markers that're associated with the coordinates
-        this._markers = coords.map(this._createMarker, this);
+            // create small markers in the middle of the regular markers
+            coordsArr.map((v, k) => {
+                let nextIndex;
 
-        // create small markers in the middle of the regular markers
-        for(let k = 0; k < coords.length - 1; k += 1) {
-            const nextIndex = k + 1;
-            this._createMiddleMarker(
-                this._markers[k], this._markers[nextIndex]
-            );
+                if (this.isPolygon()) {
+                    nextIndex = (k + 1) % coordsArr.length;
+                } else {
+                    nextIndex = k + 1;
+                }
+                return this._createMiddleMarker(ringArr[k], ringArr[nextIndex]);
+            });
+
+            return ringArr;
+        };
+
+        this._markers = [];
+
+        if (this.isPolygon()) {
+            // coords is a multidimansional array, handle all rings
+            this._markers = coords.map(handleRing, this);
+        } else {
+            // coords is one dimensional, handle the ring
+            this._markers = handleRing(coords);
         }
 
-        if(this.options.snappable) {
+        if (this.options.snappable) {
             this._initSnappableMarkers();
         }
     },
 
     // creates initial markers for coordinates
-    _createMarker(latlng, index) {
+    _createMarker(latlng) {
         const marker = new L.Marker(latlng, {
-            draggable: true,
+            draggable: !this.options.preventVertexEdit,
             icon: L.divIcon({ className: 'marker-icon' }),
         });
 
-        marker._origLatLng = latlng;
-        marker._index = index;
         marker._pmTempLayer = true;
 
         marker.on('dragstart', this._onMarkerDragStart, this);
         marker.on('move', this._onMarkerDrag, this);
         marker.on('dragend', this._onMarkerDragEnd, this);
-        marker.on('contextmenu', this._removeMarker, this);
+
+        if (!this.options.preventMarkerRemoval) {
+            marker.on('contextmenu', this._removeMarker, this);
+        }
 
         this._markerGroup.addLayer(marker);
 
@@ -134,6 +223,11 @@ Edit.Line = Edit.extend({
 
     // creates the middle markes between coordinates
     _createMiddleMarker(leftM, rightM) {
+        // cancel if there are no two markers
+        if (!leftM || !rightM) {
+            return false;
+        }
+
         const latlng = this._calcMiddleLatLng(leftM.getLatLng(), rightM.getLatLng());
 
         const middleMarker = this._createMarker(latlng);
@@ -166,6 +260,8 @@ Edit.Line = Edit.extend({
 
             this._addMarker(middleMarker, leftM, rightM);
         });
+
+        return middleMarker;
     },
 
     // adds a new marker from a middlemarker
@@ -175,21 +271,26 @@ Edit.Line = Edit.extend({
         newM.off('click');
 
         // now, create the polygon coordinate point for that marker
+        // and push into marker array
+        // and associate polygon coordinate with marker coordinate
         const latlng = newM.getLatLng();
         const coords = this._layer._latlngs;
-        const index = leftM._index + 1;
+        const { ringIndex, index } = this.findMarkerIndex(this._markers, rightM);
 
-        coords.splice(index, 0, latlng);
+        // define the coordsRing that is edited
+        const coordsRing = ringIndex > -1 ? coords[ringIndex] : coords;
 
-        // associate polygon coordinate with marker coordinate
-        newM._origLatLng = coords[index];
+        // define the markers array that is edited
+        const markerArr = ringIndex > -1 ? this._markers[ringIndex] : this._markers;
 
-        // push into marker array & update the indexes for every marker
-        this._markers.splice(index, 0, newM);
-        this._markers.map((marker, i) => {
-            marker._index = i;
-            return true;
-        });
+        // add coordinate to coordinate array
+        coordsRing.splice(index, 0, latlng);
+
+        // add marker to marker array
+        markerArr.splice(index, 0, newM);
+
+        // set new latlngs to update polygon
+        this._layer.setLatLngs(coords);
 
         // create the new middlemarkers
         this._createMiddleMarker(leftM, newM);
@@ -198,116 +299,245 @@ Edit.Line = Edit.extend({
         // fire edit event
         this._fireEdit();
 
-        if(this.options.snappable) {
+        this._layer.fire('pm:vertexadded', {
+            layer: this._layer,
+            marker: newM,
+            index,
+            ringIndex,
+            // TODO: maybe add latlng as well?
+        });
+
+        if (this.options.snappable) {
             this._initSnappableMarkers();
         }
     },
 
     _removeMarker(e) {
+        // if self intersection isn't allowed, save the coords upon dragstart
+        // in case we need to reset the layer
+        if (!this.options.allowSelfIntersection) {
+            const c = this._layer.getLatLngs();
+            this._coordsBeforeEdit = JSON.parse(JSON.stringify(c));
+        }
+
+        // the marker that should be removed
         const marker = e.target;
-        const coords = this._layer._latlngs;
-        const index = marker._index;
+
+        // coords of the layer
+        const coords = this._layer.getLatLngs();
+
+        // find the coord ring index and index of the marker
+        const { ringIndex, index } = this.findMarkerIndex(this._markers, marker);
+
+        // define the coordsRing that is edited
+        const coordsRing = ringIndex > -1 ? coords[ringIndex] : coords;
+
+        // define the markers array that is edited
+        const markerArr = ringIndex > -1 ? this._markers[ringIndex] : this._markers;
 
         // only continue if this is NOT a middle marker (those can't be deleted)
-        if(index === undefined) {
+        const isMiddleMarker = this.findMarkerIndex(this._markers, marker).index === -1;
+        if (isMiddleMarker) {
             return;
         }
 
-        // remove polygon coordinate from this marker
-        coords.splice(index, 1);
+        // remove coordinate
+        coordsRing.splice(index, 1);
 
-        // if the poly has no coordinates left, remove the layer
-        // else, redraw it
-        if(coords.length < 1) {
-            this._layer.remove();
-        } else {
-            this._layer.redraw();
+        // set new latlngs to the polygon
+        this._layer.setLatLngs(coords);
+
+        // if the ring of the poly has no coordinates left, remove the ring
+        if (coordsRing.length <= 1) {
+            // remove coords ring
+            coords.splice(ringIndex, 1);
+
+            // set new coords
+            this._layer.setLatLngs(coords);
+
+            // re-enable editing so unnecessary markers are removed
+            // TODO: kind of an ugly workaround maybe do it better?
+            this.disable();
+            this.enable(this.options);
         }
 
+        // if no coords are left, remove the layer
+        if (coords.length < 1) {
+            this._layer.remove();
+        }
+
+        // now handle the middle markers
         // remove the marker and the middlemarkers next to it from the map
-        if(marker._middleMarkerPrev) {
+        if (marker._middleMarkerPrev) {
             this._markerGroup.removeLayer(marker._middleMarkerPrev);
         }
-        if(marker._middleMarkerNext) {
+        if (marker._middleMarkerNext) {
             this._markerGroup.removeLayer(marker._middleMarkerNext);
         }
 
+        // remove the marker from the map
         this._markerGroup.removeLayer(marker);
 
-        // find neighbor marker-indexes
-        const leftMarkerIndex = index - 1 < 0 ? undefined : index - 1;
-        const rightMarkerIndex = index + 1 >= this._markers.length ? undefined : index + 1;
+        let rightMarkerIndex;
+        let leftMarkerIndex;
+
+        if (this.isPolygon()) {
+            // find neighbor marker-indexes
+            rightMarkerIndex = (index + 1) % markerArr.length;
+            leftMarkerIndex = (index + (markerArr.length - 1)) % markerArr.length;
+        } else {
+            // find neighbor marker-indexes
+            leftMarkerIndex = index - 1 < 0 ? undefined : index - 1;
+            rightMarkerIndex = index + 1 >= markerArr.length ? undefined : index + 1;
+        }
 
         // don't create middlemarkers if there is only one marker left
-        // or if the middlemarker would be between the first and last coordinate of a polyline
-        if(rightMarkerIndex && leftMarkerIndex && rightMarkerIndex !== leftMarkerIndex) {
-            const leftM = this._markers[leftMarkerIndex];
-            const rightM = this._markers[rightMarkerIndex];
+        if (rightMarkerIndex !== leftMarkerIndex) {
+            const leftM = markerArr[leftMarkerIndex];
+            const rightM = markerArr[rightMarkerIndex];
             this._createMiddleMarker(leftM, rightM);
         }
 
-        // remove the marker from the markers array & update indexes
-        this._markers.splice(index, 1);
-        this._markers.map((m, i) => {
-            m._index = i;
-            return true;
-        });
+        // remove the marker from the markers array
+        markerArr.splice(index, 1);
 
         // fire edit event
         this._fireEdit();
+
+        // fire vertex removal event
+        this._layer.fire('pm:vertexremoved', {
+            layer: this._layer,
+            marker,
+            index,
+            ringIndex,
+            // TODO: maybe add latlng as well?
+        });
+    },
+    findMarkerIndex(markers, marker) {
+        // find the index of a marker in the markers array and returns the parent index as well in case of a multidimensional array
+        // Multidimensional arrays would mean the layer has multiple coordinate rings (like holes in polygons)
+        let index;
+        let ringIndex;
+
+        if (!this.isPolygon()) {
+            index = markers.findIndex(m => marker._leaflet_id === m._leaflet_id);
+        } else {
+            ringIndex = markers.findIndex((inner) => {
+                index = inner.findIndex(m => marker._leaflet_id === m._leaflet_id);
+                return index > -1;
+            });
+        }
+
+        return {
+            index,
+            ringIndex,
+        };
+    },
+
+    updatePolygonCoordsFromMarkerDrag(marker) {
+        // update polygon coords
+        const coords = this._layer.getLatLngs();
+        const { ringIndex, index } = this.findMarkerIndex(this._markers, marker);
+        const ring = ringIndex > -1 ? coords[ringIndex] : coords;
+
+        ring.splice(index, 1, marker.getLatLng());
+
+        // set new coords on layer
+        this._layer.setLatLngs(coords).redraw();
     },
 
     _onMarkerDrag(e) {
         // dragged marker
         const marker = e.target;
 
-        // only continue if this is NOT a middle marker (those can't be deleted)
-        if(marker._index === undefined) {
+        // only continue if this is NOT a middle marker
+        const isMiddleMarker = this.findMarkerIndex(this._markers, marker).index === -1;
+        if (isMiddleMarker) {
             return;
         }
 
-        // the dragged markers neighbors
-        const nextMarkerIndex = marker._index + 1 >= this._markers.length ? 0 : marker._index + 1;
-        const prevMarkerIndex = marker._index - 1 < 0 ? this._markers.length - 1 : marker._index - 1;
+        this.updatePolygonCoordsFromMarkerDrag(marker);
 
-        // update marker coordinates which will update polygon coordinates
-        L.extend(marker._origLatLng, marker._latlng);
-        this._layer.redraw();
+        // the dragged markers neighbors
+        const { ringIndex, index } = this.findMarkerIndex(this._markers, marker);
+        const markerArr = ringIndex > -1 ? this._markers[ringIndex] : this._markers;
+
+        // find the indizes of next and previous markers
+        const nextMarkerIndex = (index + 1) % markerArr.length;
+        const prevMarkerIndex = (index + markerArr.length - 1) % markerArr.length;
 
         // update middle markers on the left and right
         // be aware that "next" and "prev" might be interchanged, depending on the geojson array
         const markerLatLng = marker.getLatLng();
-        const prevMarkerLatLng = this._markers[prevMarkerIndex].getLatLng();
-        const nextMarkerLatLng = this._markers[nextMarkerIndex].getLatLng();
 
-        if(marker._middleMarkerNext) {
+        // get latlng of prev and next marker
+        const prevMarkerLatLng = markerArr[prevMarkerIndex].getLatLng();
+        const nextMarkerLatLng = markerArr[nextMarkerIndex].getLatLng();
+
+        if (marker._middleMarkerNext) {
             const middleMarkerNextLatLng = this._calcMiddleLatLng(markerLatLng, nextMarkerLatLng);
             marker._middleMarkerNext.setLatLng(middleMarkerNextLatLng);
         }
 
-        if(marker._middleMarkerPrev) {
+        if (marker._middleMarkerPrev) {
             const middleMarkerPrevLatLng = this._calcMiddleLatLng(markerLatLng, prevMarkerLatLng);
             marker._middleMarkerPrev.setLatLng(middleMarkerPrevLatLng);
+        }
+
+        // if self intersection is not allowed, handle it
+        if (!this.options.allowSelfIntersection) {
+            this._handleLayerStyle();
         }
     },
 
     _onMarkerDragEnd(e) {
+        const marker = e.target;
+        const { ringIndex, index } = this.findMarkerIndex(this._markers, marker);
+
+        // if self intersection is not allowed but this edit caused a self intersection,
+        // reset and cancel; do not fire events
+        if (!this.options.allowSelfIntersection && this.hasSelfIntersection()) {
+            // reset coordinates
+            this._layer.setLatLngs(this._coordsBeforeEdit);
+            this._coordsBeforeEdit = null;
+
+            // re-enable markers for the new coords
+            this._initMarkers();
+
+            // check for selfintersection again (mainly to reset the style)
+            this._handleLayerStyle();
+            return;
+        }
+
         this._layer.fire('pm:markerdragend', {
             markerEvent: e,
+            ringIndex,
+            index,
         });
 
         // fire edit event
         this._fireEdit();
     },
     _onMarkerDragStart(e) {
+        const marker = e.target;
+        const { ringIndex, index } = this.findMarkerIndex(this._markers, marker);
+
         this._layer.fire('pm:markerdragstart', {
             markerEvent: e,
+            ringIndex,
+            index,
         });
+
+        // if self intersection isn't allowed, save the coords upon dragstart
+        // in case we need to reset the layer
+        if (!this.options.allowSelfIntersection) {
+            this._coordsBeforeEdit = this._layer.getLatLngs();
+        }
     },
 
     _fireEdit() {
         // fire edit event
-        this._layer.edited = true;
+        this._layerEdited = true;
         this._layer.fire('pm:edit');
     },
 

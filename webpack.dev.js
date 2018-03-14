@@ -6,7 +6,7 @@ const path = require('path');
 module.exports = {
     watch: true,
     devtool: 'cheap-eval-source-map',
-    entry: './src/js/L.PM.js',
+    entry: ['./src/js/L.PM.js'],
     output: {
         filename: 'leaflet.pm.min.js',
         path: path.resolve(__dirname, 'dist'),
@@ -19,7 +19,7 @@ module.exports = {
                 use: {
                     loader: 'babel-loader',
                     options: {
-                        presets: ['env'],
+                        presets: ['@babel/preset-env'],
                     },
                 },
             },
@@ -36,7 +36,5 @@ module.exports = {
             },
         ],
     },
-    plugins: [
-        new ExtractTextPlugin('leaflet.pm.css'),
-    ],
+    plugins: [new ExtractTextPlugin('leaflet.pm.css')],
 };

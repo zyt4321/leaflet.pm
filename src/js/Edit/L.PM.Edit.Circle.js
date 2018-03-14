@@ -6,7 +6,7 @@ Edit.Circle = Edit.extend({
         this._enabled = false;
     },
     toggleEdit(options) {
-        if(!this.enabled()) {
+        if (!this.enabled()) {
             this.enable(options);
         } else {
             this.disable();
@@ -15,12 +15,12 @@ Edit.Circle = Edit.extend({
     enabled() {
         return this._enabled;
     },
-    enable(options = {}) {
-        this.options = options;
+    enable(options) {
+        L.Util.setOptions(this, options);
 
         this._map = this._layer._map;
 
-        if(!this.enabled()) {
+        if (!this.enabled()) {
             // if it was already enabled, disable first
             // we don't block enabling again because new options might be passed
             this.disable();
@@ -39,12 +39,12 @@ Edit.Circle = Edit.extend({
     },
     disable(layer = this._layer) {
         // if it's not enabled, it doesn't need to be disabled
-        if(!this.enabled()) {
+        if (!this.enabled()) {
             return false;
         }
 
         // prevent disabling if layer is being dragged
-        if(layer.pm._dragging) {
+        if (layer.pm._dragging) {
             return false;
         }
         layer.pm._enabled = false;
@@ -58,13 +58,18 @@ Edit.Circle = Edit.extend({
         const el = layer._path;
         L.DomUtil.removeClass(el, 'leaflet-pm-draggable');
 
+        if (this._layerEdited) {
+            this._layer.fire('pm:update', {});
+        }
+        this._layerEdited = false;
+
         return true;
     },
     _initMarkers() {
         const map = this._map;
 
         // cleanup old ones first
-        if(this._layerGroup) {
+        if (this._layerGroup) {
             this._layerGroup.clearLayers();
         }
 
@@ -83,7 +88,7 @@ Edit.Circle = Edit.extend({
         this._markers = [this._centerMarker, this._outerMarker];
         this._createHintLine(this._centerMarker, this._outerMarker);
 
-        if(this.options.snappable) {
+        if (this.options.snappable) {
             this._initSnappableMarkers();
         }
     },
@@ -106,6 +111,25 @@ Edit.Circle = Edit.extend({
         const outer = this._getLatLngOnCircle(center, radius);
         this._outerMarker.setLatLng(outer);
         this._syncHintLine();
+
+        this._layer.fire('pm:centerplaced', {
+            layer: this._layer,
+            latlng: center,
+        });
+    },
+    _onMarkerDragStart(e) {
+        this._layer.fire('pm:markerdragstart', {
+            markerEvent: e,
+        });
+    },
+    _onMarkerDragEnd(e) {
+        // fire edit event
+        this._fireEdit();
+
+        // fire markerdragend event
+        this._layer.fire('pm:markerdragend', {
+            markerEvent: e,
+        });
     },
     _syncCircleRadius() {
         const A = this._centerMarker.getLatLng();
@@ -132,19 +156,17 @@ Edit.Circle = Edit.extend({
     _createCenterMarker(latlng) {
         const marker = this._createMarker(latlng);
 
-        // marker.on('dragstart', this._onMarkerDragStart, this);
         marker.on('move', this._moveCircle, this);
-        // marker.on('dragend', this._onMarkerDragEnd, this);
         // marker.on('contextmenu', this._removeMarker, this);
 
         return marker;
     },
     _createOuterMarker(latlng) {
         const marker = this._createMarker(latlng);
-
-        // marker.on('dragstart', this._onMarkerDragStart, this);
+        if (this.options.preventVertexEdit) {
+            marker.dragging.disable();
+        }
         marker.on('move', this._resizeCircle, this);
-        // marker.on('dragend', this._onMarkerDragEnd, this);
         // marker.on('contextmenu', this._removeMarker, this);
 
         return marker;
@@ -158,8 +180,16 @@ Edit.Circle = Edit.extend({
         marker._origLatLng = latlng;
         marker._pmTempLayer = true;
 
+        marker.on('dragstart', this._onMarkerDragStart, this);
+        marker.on('dragend', this._onMarkerDragEnd, this);
+
         this._layerGroup.addLayer(marker);
 
         return marker;
+    },
+    _fireEdit() {
+        // fire edit event
+        this._layer.fire('pm:edit');
+        this._layerEdited = true;
     },
 });

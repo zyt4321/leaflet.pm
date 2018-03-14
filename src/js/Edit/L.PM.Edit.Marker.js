@@ -11,7 +11,7 @@ Edit.Marker = Edit.extend({
     },
 
     toggleEdit(options) {
-        if(!this.enabled()) {
+        if (!this.enabled()) {
             this.enable(options);
         } else {
             this.disable();
@@ -26,22 +26,23 @@ Edit.Marker = Edit.extend({
 
         this._map = this._layer._map;
 
-        if(this.enabled()) {
+        if (this.enabled()) {
             return;
         }
         this._enabled = true;
 
-
         // enable removal for the marker
-        this._layer.on('contextmenu', this._removeMarker, this);
+        if (!this.options.preventMarkerRemoval) {
+            this._layer.on('contextmenu', this._removeMarker, this);
+        }
 
         // enable dragging and removal for the marker
-        if(this.options.snappable) {
+        if (this.options.draggable) {
             this._layer.dragging.enable();
         }
 
         // enable snapping
-        if(this.options.snappable) {
+        if (this.options.snappable) {
             this._initSnappableMarkers();
         }
     },
@@ -56,6 +57,11 @@ Edit.Marker = Edit.extend({
         // disable dragging and removal for the marker
         this._layer.dragging.disable();
         this._layer.off('contextmenu', this._removeMarker, this);
+
+        if (this._layerEdited) {
+            this._layer.fire('pm:update', {});
+        }
+        this._layerEdited = false;
     },
     _removeMarker(e) {
         const marker = e.target;
@@ -67,6 +73,7 @@ Edit.Marker = Edit.extend({
 
         // fire the pm:edit event and pass shape and marker
         marker.fire('pm:edit');
+        this._layerEdited = true;
     },
 
     // overwrite initSnappableMarkers from Snapping.js Mixin
