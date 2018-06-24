@@ -16,9 +16,6 @@
 // Import commands.js using ES2015 syntax:
 import './commands';
 
-// Alternatively you can use CommonJS syntax:
-// require('./commands')
-
 const accessToken = 'pk.eyJ1IjoibWFwc29mc3VtaXQiLCJhIjoiY2l1ZDF3dHE5MDAxZDMwbjA0cTR3dG50eSJ9.63Xci-GKFikhAobboF0DVQ';
 
 beforeEach(() => {

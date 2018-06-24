@@ -25,7 +25,7 @@ Draw.Line = Draw.extend({
         this._layerGroup._pmTempLayer = true;
         this._layerGroup.addTo(this._map);
 
-        // this is the polyLine that'll make up the polygon
+        // this is the polyLine that'll make up the shape
         this._layer = L.polyline([], this.options.templineStyle);
         this._layer._pmTempLayer = true;
         this._layerGroup.addLayer(this._layer);
@@ -252,6 +252,20 @@ Draw.Line = Draw.extend({
             this._cleanupSnapping();
         }
     },
+    _removeVertex(e) {
+        const marker = e.target;
+        const latlng = marker.getLatLng();
+
+        // coords of the layer
+        const coords = this._layer.getLatLngs();
+
+        console.log(latlng, coords);
+
+        const index = coords.findIndex(l => l === latlng);
+
+        coords.splice(index, 1);
+        this._layer.setLatLng(coords).redraw();
+    },
     _createMarker(latlng) {
         // create the new marker
         const marker = new L.Marker(latlng, {
@@ -265,6 +279,9 @@ Draw.Line = Draw.extend({
 
         // a click on any marker finishes this shape
         marker.on('click', this._finishShape, this);
+
+        // a right click on any marker removes the vertex again
+        marker.on('contextmenu', this._removeVertex, this);
 
         return marker;
     },

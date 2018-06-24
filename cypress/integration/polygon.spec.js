@@ -1,6 +1,8 @@
 describe('Draw & Edit Poly', () => {
     const mapSelector = '#map';
 
+    it.only('should be able to remove last marker', () => {});
+
     it('draws and edits a polygon', () => {
         cy.window().then(({ map }) => {
             cy.hasLayers(map, 1);

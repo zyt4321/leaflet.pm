@@ -5,6 +5,7 @@ const path = require('path');
 
 module.exports = {
     watch: true,
+    mode: 'development',
     devtool: 'cheap-eval-source-map',
     entry: ['./src/js/L.PM.js'],
     output: {
