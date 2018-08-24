@@ -73,40 +73,6 @@ const map4 = L.map('example4')
 //     console.log(e.workingLayer);
 // });
 
-const map2 = L.map('example2')
-    .setView([51.505, -0.09], 13)
-    .addLayer(mapboxTiles1);
-const map3 = L.map('example3')
-    .setView([51.505, -0.09], 13)
-    .addLayer(mapboxTiles2);
-const map4 = L.map('example4')
-    .setView([51.505, -0.09], 13)
-    .addLayer(mapboxTiles3);
-// map2.dragging.disable();
-
-// map2.on('pm:create', function(e) {
-//     // alert('pm:create event fired. See console for details');
-//     console.log(e);
-
-//     const layer = e.layer;
-//     layer.on('pm:cut', function(ev) {
-//         console.log('cut event on layer');
-//         console.log(ev);
-//     });
-// });
-// map2.on('pm:cut', function(e) {
-//     console.log('cut event on map');
-//     console.log(e);
-// });
-// map2.on('pm:remove', function(e) {
-//     console.log('pm:remove event fired. See console for details');
-//     // alert('pm:remove event fired. See console for details');
-//     console.log(e);
-// });
-// map2.on('pm:drawstart', function(e) {
-//     console.log(e);
-//     console.log(e.workingLayer);
-// });
 
 const m1 = L.circleMarker([51.50313, -0.091223], { radius: 10 });
 const m2 = L.marker([51.50614, -0.0989]);
@@ -189,27 +155,6 @@ const geoJsonData = {
                         [-0.19303756713867188, 51.53106680201548],
                         [-0.19303756713867188, 51.53106680201548],
                     ],
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    // ],
                 ],
             },
         },
@@ -237,7 +182,7 @@ function getGeojson() {
         }
     }
     //发送请求
-    xhr.open('GET', '/leaflet.pm-develop/demo/test-200.json', true)
+    xhr.open('GET', '/leaflet.pm/demo/test-200.json', true)
     // xhr.open('GET','http://192.168.1.122:8080/geoserver/sf/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=sf:roads&maxFeatures=50&outputFormat=application%2Fjson',true)
     xhr.send()
 }

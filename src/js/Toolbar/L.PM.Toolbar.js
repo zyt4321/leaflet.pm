@@ -168,18 +168,6 @@ const Toolbar = L.Class.extend({
             disableOtherButtons: true,
             position: this.options.position,
         };
-        const cutButton = {
-            className: 'leaflet-pm-icon-cut',
-            onClick: () => {},
-            afterClick: () => {
-                // enable polygon drawing mode without snap
-                this.map.pm.Draw.Cut.toggle({ snappable: true, cursorMarker: true, allowSelfIntersection: false });
-            },
-            doToggle: true,
-            toggleStatus: false,
-            disableOtherButtons: true,
-            position: this.options.position,
-        };
 
         const cutButton = {
             className: 'leaflet-pm-icon-cut',
