@@ -27,6 +27,10 @@
     background-image: url('../assets/icons/line.png');
     background-size: 80%;
 }
+.leaflet-pm-toolbar .leaflet-pm-icon-polycut {
+    background-image: url('../assets/icons/polycut.png');
+    background-size: 80%;
+}
 .leaflet-pm-toolbar .leaflet-pm-icon-circle {
     background-image: url('../assets/icons/circle.png');
     background-size: 90%;
@@ -51,6 +55,16 @@
     background-image: url('../assets/icons/cut.png');
     background-size: 80%;
     background-position: 4px center;
+}
+
+.leaflet-pm-toolbar .leaflet-pm-icon-slice {
+    background-image: url('../assets/icons/slice.png');
+    background-size: 98%;
+}
+
+.leaflet-pm-toolbar .leaflet-pm-icon-road {
+    background-image: url('../assets/icons/road.png');
+    background-size: 98%;
 }
 
 .leaflet-buttons-control-button:hover {

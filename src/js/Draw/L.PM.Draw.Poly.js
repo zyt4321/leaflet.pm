@@ -18,6 +18,21 @@ Draw.Poly = Draw.Line.extend({
             // Leaflet creates an extra node with double click
             coords.splice(coords.length - 1, 1);
         }
+        // 双击第一个点结束绘制时，会生成一个顶点数为0的空多边形，要删除; 点数小于3，也要删除
+        if(coords.length <= 2) {
+            // disable drawing
+            this.disable();
+            // clean up snapping states
+            this._cleanupSnapping();
+            // remove the first vertex from "other snapping layers"
+            this._otherSnapLayers.splice(this._tempSnapLayerIndex, 1);
+            delete this._tempSnapLayerIndex;
+
+            if(this.options.forever){
+                this.enable(this.options)
+            }
+            return;
+        }
         const polygonLayer = L.polygon(coords, this.options.pathOptions).addTo(this._map);
 
         // disable drawing
@@ -35,11 +50,16 @@ Draw.Poly = Draw.Line.extend({
         // remove the first vertex from "other snapping layers"
         this._otherSnapLayers.splice(this._tempSnapLayerIndex, 1);
         delete this._tempSnapLayerIndex;
+
+        if(this.options.forever){
+            this.enable(this.options)
+        }
     },
     _createMarker(latlng, first) {
         // create the new marker
         const marker = new L.Marker(latlng, {
             draggable: false,
+            zIndexOffset: 999,
             icon: L.divIcon({ className: 'marker-icon' }),
         });
 
@@ -51,16 +71,20 @@ Draw.Poly = Draw.Line.extend({
 
         // if the first marker gets clicked again, finish this shape
         if (first) {
-            marker.on('click', this._finishShape, this);
+            // marker.on('click', this._finishShape, this);
 
             // add the first vertex to "other snapping layers" so the polygon is easier to finish
             this._tempSnapLayerIndex = this._otherSnapLayers.push(marker) - 1;
-
-            if (this.options.snappable) {
-                this._cleanupSnapping();
-            }
+            //
+            // if (this.options.snappable) {
+            //     this._cleanupSnapping();
+            // }
         }
-
+        // 单击任意已绘制点，都会结束绘制
+        marker.on('click', this._finishShape, this);
+        if (this.options.snappable) {
+            this._cleanupSnapping();
+        }
         return marker;
     },
 });

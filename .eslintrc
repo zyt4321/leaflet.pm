@@ -7,7 +7,12 @@
         "no-param-reassign": 0,
         "max-len": ["error", 140],
         "no-restricted-syntax": 0,
-        "guard-for-in": 0
+        "guard-for-in": 0,
+        "linebreak-style": ["off", "windows"]
+    },
+    "plugins": ["cypress"],
+    "env": {
+        "cypress/globals": true
     },
     "globals": {
         "L": true,

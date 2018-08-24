@@ -90,7 +90,7 @@ Draw.Rectangle = Draw.extend({
         this._enabled = false;
 
         // reset cursor
-        this._map._container.style.cursor = 'default';
+        this._map._container.style.cursor = '';
 
         // unbind listeners
         this._map.off('click', this._finishShape, this);
@@ -196,10 +196,10 @@ Draw.Rectangle = Draw.extend({
             });
         }
     },
-    _finishShape() {
+    _finishShape(e) {
         // create the final rectangle layer, based on opposite corners A & B
         const A = this._startMarker.getLatLng();
-        const B = this._hintMarker.getLatLng();
+        const B = e.latlng;
         const rectangleLayer = L.rectangle([A, B], this.options.pathOptions).addTo(this._map);
 
         // disable drawing

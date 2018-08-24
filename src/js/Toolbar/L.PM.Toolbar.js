@@ -7,6 +7,9 @@ L.Control.PMButton = PMButton;
 
 const Toolbar = L.Class.extend({
     options: {
+        slicePolygon: true,
+        drawRoad: true,
+        drawPolyCut: true,
         drawMarker: true,
         drawPolygon: true,
         drawPolyline: true,
@@ -130,7 +133,41 @@ const Toolbar = L.Class.extend({
             disableOtherButtons: true,
             position: this.options.position,
         };
-
+        const drawPolyCutButton = {
+            className: 'leaflet-pm-icon-polycut',
+            onClick: () => {},
+            afterClick: () => {
+                // toggle drawing mode
+                this.map.pm.Draw.PolyCut.toggle();
+            },
+            doToggle: true,
+            toggleStatus: false,
+            disableOtherButtons: true,
+            position: this.options.position,
+        };
+        const drawRoadButton = {
+            className: 'leaflet-pm-icon-road',
+            onClick: () => {},
+            afterClick: () => {
+                // toggle drawing mode
+                this.map.pm.Draw.Road.toggle();
+            },
+            doToggle: true,
+            toggleStatus: false,
+            disableOtherButtons: true,
+            position: this.options.position,
+        };
+        const slicePolygonButton = {
+            className: 'leaflet-pm-icon-slice',
+            onClick: () => {},
+            afterClick: () => {
+                this.map.pm.Draw.Slice.toggle();
+            },
+            doToggle: true,
+            toggleStatus: false,
+            disableOtherButtons: true,
+            position: this.options.position,
+        };
         const cutButton = {
             className: 'leaflet-pm-icon-cut',
             onClick: () => {},
@@ -222,7 +259,10 @@ const Toolbar = L.Class.extend({
         this._addButton('drawPolyline', new L.Control.PMButton(drawLineButton));
         this._addButton('drawRectangle', new L.Control.PMButton(drawRectangleButton));
         this._addButton('drawPolygon', new L.Control.PMButton(drawPolyButton));
+        this._addButton('drawPolyCut', new L.Control.PMButton(drawPolyCutButton));
+        this._addButton('drawRoad', new L.Control.PMButton(drawRoadButton));
         this._addButton('drawCircle', new L.Control.PMButton(drawCircleButton));
+        this._addButton('slicePolygon', new L.Control.PMButton(slicePolygonButton));
         this._addButton('cutPolygon', new L.Control.PMButton(cutButton));
         this._addButton('editMode', new L.Control.PMButton(editButton));
         this._addButton('dragPolygon', new L.Control.PMButton(dragButton));

@@ -10,7 +10,6 @@ Draw.Circle = Draw.extend({
         // TODO: Think about if these options could be passed globally for all
         // instances of L.PM.Draw. So a dev could set drawing style one time as some kind of config
         L.Util.setOptions(this, options);
-
         this.options.radius = 0;
 
         // enable draw mode
@@ -82,7 +81,7 @@ Draw.Circle = Draw.extend({
         this._enabled = false;
 
         // reset cursor
-        this._map._container.style.cursor = 'default';
+        this._map._container.style.cursor = '';
 
         // unbind listeners
         this._map.off('click', this._finishShape, this);
@@ -172,14 +171,15 @@ Draw.Circle = Draw.extend({
             });
         }
     },
-    _finishShape() {
+    _finishShape(e) {
         // calc the radius
         const center = this._centerMarker.getLatLng();
-        const cursor = this._hintMarker.getLatLng();
+        const cursor = e.latlng;
         const radius = center.distanceTo(cursor);
+        const options = Object.assign({}, this.options.pathOptions, { radius });
 
         // create the final circle layer
-        const circleLayer = L.circle(center, { radius }).addTo(this._map);
+        const circleLayer = L.circle(center, options).addTo(this._map);
 
         // disable drawing
         this.disable();

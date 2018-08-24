@@ -1,22 +1,17 @@
 # Leaflet Geometry Management
 
-A Leaflet Plugin For Creating And Editing Geometry Layers in Leaflet 1.0.\
-Draw, Edit, Drag, Cut and Snap Features.
+![](https://travis-ci.com/codeofsumit/leaflet.pm.svg?branch=develop)
 
-In the name "leaflet.pm" the "pm" stands for Polygon Management. At the time,
-this plugin only supported polygons. Now you can edit Markers, Polylines,
-Polygons, Circles, Rectangles, LayerGroups, GeoJSON and more are coming.
+A Leaflet Plugin For Creating And Editing Geometry Layers in Leaflet 1.x.\
+Draw, Edit, Drag, Cut and Snap layers like Markers, Polylines,
+Polygons, Circles, Rectangles, LayerGroups, GeoJSON, MultiPolygons, MultiLineStrings and more are coming.
 
 ## [Demo (click here)](https://leafletpm.now.sh)
 
 ![snap at drag](https://github.com/codeofsumit/leaflet.pm-demo/blob/master/static/gifs/github-demo.gif)
 
-### Why _another_ geometry editing plugin?
-
-As leaflet.draw development seemed to came to a halt and I needed support for
-leaflet 1.0 I created this plugin myself due to a lack of alternatives.\
-As we are always using the latest leaflet version in a big production app, I will
-(have to) keep this plugin constantly developed.
+Need advanced features like GeoJSON Export, storing meta data and more?\
+Check out **[Geoman](https://geoman.now.sh)**.
 
 ### Getting Started
 
@@ -24,12 +19,6 @@ As we are always using the latest leaflet version in a big production app, I wil
 
 ```
 npm install leaflet.pm --save
-```
-
-#### Install via Bower (DEPRECATED - leaflet.pm is no longer supporting bower since 0.17.0)
-
-```
-bower install leaflet.pm --save
 ```
 
 #### Install Manually
@@ -66,6 +55,8 @@ import 'leaflet.pm/dist/leaflet.pm.css';
 require('leaflet.pm');
 require('leaflet.pm/dist/leaflet.pm.css');
 ```
+
+### Documentation
 
 #### Init Leaflet.PM
 
@@ -119,7 +110,7 @@ map.pm.enableDraw('Poly', { finishOn: 'dblclick' });
 map.pm.disableDraw('Poly');
 ```
 
-All available options are specified in the Drawing Mode Section below
+All available options are specified in the Drawing Mode Section below.
 
 ##### Drawing Mode
 
@@ -131,6 +122,9 @@ var options = {
     // snapping
     snappable: true,
     snapDistance: 20,
+
+    // allow snapping to the middle of segments
+    snapMiddle: false,
 
     // self intersection
     allowSelfIntersection: true,
@@ -404,6 +398,12 @@ map.pm.setPathOptions({
     fillOpacity: 0.4,
 });
 ```
+
+### Feature Request
+
+I'm adopting the Issue Management of lodash which means, feature requests get the "Feature Request" Label and then get closed.
+You can upvote existing feature requests (or create new ones). Upvotes make me see how much a feature is requested and prioritize their implementation.
+Please see the existing [Feature Requests here](https://github.com/codeofsumit/leaflet.pm/issues?q=is%3Aissue+label%3A%22feature+request%22+is%3Aclosed) and upvote if you want them to be implemented.
 
 ### Credit
 

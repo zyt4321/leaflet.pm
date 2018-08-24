@@ -18,6 +18,9 @@ import './Draw/L.PM.Draw.Poly';
 import './Draw/L.PM.Draw.Rectangle';
 import './Draw/L.PM.Draw.Circle';
 import './Draw/L.PM.Draw.Cut';
+import './Draw/L.PM.Draw.Slice';
+import './Draw/L.PM.Draw.Road';
+import './Draw/L.PM.Draw.PolyCut';
 
 import Edit from './Edit/L.PM.Edit';
 import './Edit/L.PM.Edit.LayerGroup';

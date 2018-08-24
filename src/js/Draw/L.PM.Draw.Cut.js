@@ -1,5 +1,5 @@
-import intersect from '@turf/intersect';
-import difference from '@turf/difference';
+import intersect from 'turf/src/intersect';
+import difference from 'turf/src/difference';
 import Draw from './L.PM.Draw';
 
 Draw.Cut = Draw.Poly.extend({
@@ -24,71 +24,104 @@ Draw.Cut = Draw.Poly.extend({
             // only layers with intersections
             .filter((l) => {
                 try {
-                    return !!intersect(layer.toGeoJSON(), l.toGeoJSON());
+                    return !!intersect(layer.toGeoJSON(12), l.toGeoJSON(12));
                 } catch (e) {
-                    console.error('You cant cut polygons with self-intersections');
+                    // console.error('You cant cut polygons with self-intersections');
+                    // console.error(e);
                     return false;
                 }
             });
 
-        // the resulting layers after the cut
-        const resultingLayers = [];
 
         // loop through all layers that intersect with the drawn (cutting) layer
         layers.forEach((l) => {
-            // find layer difference
-            const diff = difference(l.toGeoJSON(), layer.toGeoJSON());
+            try {
+                // 用layer切l，获得l的剩余部分
+                const diff = difference(l.toGeoJSON(12), layer.toGeoJSON(12));
+                // 求layer与l的公共部分
+                const intersection = intersect(l.toGeoJSON(12), layer.toGeoJSON(12));
+                // 若得到的是multipolygon，则转换为单独的polygon
+                const featureCollection = { features: [], type: 'FeatureCollection' };
+                const geom1 = diff.geometry;
+                const props1 = diff.properties;
+                if(geom1.type === 'MultiPolygon') {
+                    for (let i = 0; i < geom1.coordinates.length; i++) {
+                        const feature = {
+                            geometry: {
+                                type: 'Polygon',
+                                coordinates: geom1.coordinates[i],
+                            },
+                            properties: props1,
+                            type: 'Feature',
+                            _temp: 'diff',
+                        };
+                        featureCollection.features.push(feature);
+                    }
+                }else if(geom1.type === 'Polygon') {
+                    geom1._temp = 'diff';
+                    featureCollection.features.push(diff);
+                }
 
-            // if result is a multipolygon, split it into regular polygons
-            // TODO: remove as soon as multipolygons are supported
-            if (diff.geometry.type === 'MultiPolygon') {
-                const geoJSONs = diff.geometry.coordinates.reduce((arr, coords) => {
-                    arr.push({ type: 'Polygon', coordinates: coords });
-                    return arr;
-                }, []);
-
-                // add new layers to map
-                geoJSONs.forEach((g) => {
-                    const newL = L.geoJSON(g, l.options);
-                    resultingLayers.push(newL);
-                    newL.addTo(this._map);
-
-                    // give the new layer the original options
-                    newL.pm.enable(this.options);
-                    newL.pm.disable();
-                });
-            } else {
+                const geom2 = intersection.geometry;
+                const props2 = intersection.properties;
+                if(geom2.type === 'MultiPolygon') {
+                    for (let i = 0; i < geom2.coordinates.length; i++) {
+                        const feature = {
+                            geometry: {
+                                type: 'Polygon',
+                                coordinates: geom2.coordinates[i],
+                            },
+                            properties: props2,
+                            type: 'Feature',
+                            _temp: 'intersect',
+                        };
+                        featureCollection.features.push(feature);
+                    }
+                }else if(geom2.type === 'Polygon') {
+                    geom2._temp = 'intersect';
+                    featureCollection.features.push(intersection);
+                }
+                // the resulting layers after the cut
+                const resultingLayersDiff = [];
+                const resultingLayersIntersect = [];
                 // add new layer to map
-                const newL = L.geoJSON(diff, l.options).addTo(this._map);
-                resultingLayers.push(newL);
-                newL.addTo(this._map);
+                for(const geo of featureCollection.features) {
+                    const polygonLayer = L.polygon(
+                        L.GeoJSON.coordsToLatLngs(geo.geometry.coordinates, 1),
+                        this.options.pathOptions,
+                    ).addTo(this._map);
+                    if (geo._temp === 'diff') {
+                        resultingLayersDiff.push(polygonLayer);
+                    }else if(geo._temp === 'intersect') {
+                        resultingLayersIntersect.push(polygonLayer);
+                    }
+                }
+                // fire pm:cut on the cutted layer
+                l.fire('pm:cut', {
+                    shape: this._shape,
+                    cuttedLayer: l,
+                    resultingLayersDiff,
+                    resultingLayersIntersect,
+                });
 
-                // give the new layer the original options
-                newL.pm.enable(this.options);
-                newL.pm.disable();
+                // fire pm:cut on the map for each cutted layer
+                this._map.fire('pm:cut', {
+                    shape: this._shape,
+                    cuttedLayer: l,
+                    resultingLayersDiff,
+                    resultingLayersIntersect,
+                });
+                // add templayer prop so pm:remove isn't fired
+                l._pmTempLayer = true;
+                layer._pmTempLayer = true;
+
+                // remove old layer and cutting layer
+                l.remove();
+                layer.remove();
+            } catch (e) {
+                // console.error('You cant cut polygons with self-intersections');
+                // console.log(e)
             }
-
-            // fire pm:cut on the cutted layer
-            l.fire('pm:cut', {
-                shape: this._shape,
-                layer: l,
-                resultingLayers,
-            });
-
-            // fire pm:cut on the map for each cutted layer
-            this._map.fire('pm:cut', {
-                shape: this._shape,
-                cuttedLayer: l,
-                resultingLayers,
-            });
-
-            // add templayer prop so pm:remove isn't fired
-            l._pmTempLayer = true;
-            layer._pmTempLayer = true;
-
-            // remove old layer and cutting layer
-            l.remove();
-            layer.remove();
         });
     },
     _finishShape() {
@@ -105,5 +138,9 @@ Draw.Cut = Draw.Poly.extend({
         // remove the first vertex from "other snapping layers"
         this._otherSnapLayers.splice(this._tempSnapLayerIndex, 1);
         delete this._tempSnapLayerIndex;
+
+        if(this.options.forever){
+            this.enable(this.options)
+        }
     },
 });

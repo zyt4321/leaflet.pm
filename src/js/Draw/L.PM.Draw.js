@@ -6,7 +6,7 @@ const Draw = L.Class.extend({
         snappable: true,
         snapDistance: 20,
         cursorMarker: true,
-        finishOnDoubleClick: false,
+        finishOnDoubleClick: true,
         finishOn: null,
         allowSelfIntersection: true,
         templineStyle: {},
@@ -16,13 +16,14 @@ const Draw = L.Class.extend({
         markerStyle: {
             draggable: true,
         },
+        forever: true, // 无尽模式
     },
     initialize(map) {
         // save the map
         this._map = map;
 
         // define all possible shapes that can be drawn
-        this.shapes = ['Marker', 'Line', 'Poly', 'Rectangle', 'Circle', 'Cut'];
+        this.shapes = ['Marker', 'Line', 'Poly', 'Rectangle', 'Circle', 'Cut', 'Slice', 'Road', 'PolyCut'];
 
         // initiate drawing class for our shapes
         this.shapes.forEach((shape) => {
@@ -61,6 +62,15 @@ const Draw = L.Class.extend({
             this[shape].addButton();
         });
     },
+    removeLastVertex(shape) {
+        if (!shape) {
+            throw new Error(`Error: Please pass a shape as a parameter. Possible shapes are: ${this.getShapes().join(',')}`);
+        }
+        if (this[shape] && this[shape].removeLastVertex) {
+            return this[shape].removeLastVertex();
+        }
+        return false;
+    }, // a
 });
 
 export default Draw;

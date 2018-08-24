@@ -1,4 +1,4 @@
-import kinks from '@turf/kinks';
+import kinks from 'turf/src/kinks';
 import Draw from './L.PM.Draw';
 
 Draw.Line = Draw.extend({
@@ -35,9 +35,10 @@ Draw.Line = Draw.extend({
         this._hintline._pmTempLayer = true;
         this._layerGroup.addLayer(this._hintline);
 
+        // 为了使点击捕捉框时能够画点，需要显示跟随marker，并设置其样式为透明
         // this is the hintmarker on the mouse cursor
         this._hintMarker = L.marker(this._map.getCenter(), {
-            icon: L.divIcon({ className: 'marker-icon cursor-marker' }),
+            icon: L.divIcon({ className: 'marker-icon-unseen' }),
         });
         this._hintMarker._pmTempLayer = true;
         this._layerGroup.addLayer(this._hintMarker);
@@ -95,7 +96,7 @@ Draw.Line = Draw.extend({
         this._enabled = false;
 
         // reset cursor
-        this._map._container.style.cursor = 'default';
+        this._map._container.style.cursor = '';
 
         // unbind listeners
         this._map.off('click', this._createVertex, this);
@@ -134,7 +135,7 @@ Draw.Line = Draw.extend({
     },
     hasSelfIntersection() {
         // check for self intersection of the layer and return true/false
-        const selfIntersection = kinks(this._layer.toGeoJSON());
+        const selfIntersection = kinks(this._layer.toGeoJSON(10));
         return selfIntersection.features.length > 0;
     },
     _syncHintLine() {
@@ -145,7 +146,9 @@ Draw.Line = Draw.extend({
 
             // set coords for hintline from marker to last vertex of drawin polyline
             this._hintline.setLatLngs([lastPolygonPoint, this._hintMarker.getLatLng()]);
-        }
+        } else {
+            this._hintline.setLatLngs([]);
+        } // a
     },
     _syncHintMarker(e) {
         // move the cursor marker
@@ -177,7 +180,7 @@ Draw.Line = Draw.extend({
         clone.addLatLng(this._hintMarker.getLatLng());
 
         // check the self intersection
-        const selfIntersection = kinks(clone.toGeoJSON());
+        const selfIntersection = kinks(clone.toGeoJSON(10));
         this._doesSelfIntersect = selfIntersection.features.length > 0;
 
         // change the style based on self intersection
@@ -268,4 +271,15 @@ Draw.Line = Draw.extend({
 
         return marker;
     },
+    removeLastVertex() {
+        if (this.enabled() && this._layer && this._layer.pm.removeLastVertex(true)) {
+            const layers = this._layerGroup.getLayers();
+            const lastVertex = layers[layers.length - 1];
+            this._layerGroup.removeLayer(lastVertex);
+            this._syncHintLine();
+            return true
+        }else {
+            return false
+        }
+    }, // a
 });
