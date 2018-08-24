@@ -33,6 +33,7 @@ Draw.Poly = Draw.Line.extend({
             }
             return;
         }
+
         const polygonLayer = L.polygon(coords, this.options.pathOptions).addTo(this._map);
 
         // disable drawing

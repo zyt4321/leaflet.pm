@@ -10,6 +10,13 @@ const mapboxTiles1 = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/street
 const mapboxTiles2 = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v9/tiles/{z}/{x}/{y}?access_token=${accessToken}`, {
     attribution:
         '&copy; <a href="https://www.mapbox.com/feedback/">Mapbox</a> &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+
+
+
+
+
+
+
 });
 const mapboxTiles3 = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v9/tiles/{z}/{x}/{y}?access_token=${accessToken}`, {
     attribution:
@@ -35,6 +42,41 @@ const map3 = L.map('example3', {
     maxZoom: 25,
     minZoom: 1
 })
+    .setView([51.505, -0.09], 13)
+    .addLayer(mapboxTiles2);
+const map4 = L.map('example4')
+    .setView([51.505, -0.09], 13)
+    .addLayer(mapboxTiles3);
+// map2.dragging.disable();
+
+// map2.on('pm:create', function(e) {
+//     // alert('pm:create event fired. See console for details');
+//     console.log(e);
+
+//     const layer = e.layer;
+//     layer.on('pm:cut', function(ev) {
+//         console.log('cut event on layer');
+//         console.log(ev);
+//     });
+// });
+// map2.on('pm:cut', function(e) {
+//     console.log('cut event on map');
+//     console.log(e);
+// });
+// map2.on('pm:remove', function(e) {
+//     console.log('pm:remove event fired. See console for details');
+//     // alert('pm:remove event fired. See console for details');
+//     console.log(e);
+// });
+// map2.on('pm:drawstart', function(e) {
+//     console.log(e);
+//     console.log(e.workingLayer);
+// });
+
+const map2 = L.map('example2')
+    .setView([51.505, -0.09], 13)
+    .addLayer(mapboxTiles1);
+const map3 = L.map('example3')
     .setView([51.505, -0.09], 13)
     .addLayer(mapboxTiles2);
 const map4 = L.map('example4')
@@ -128,6 +170,7 @@ const geoJsonData = {
                 // type: 'MultiPolygon',
                 coordinates: [
                     // [
+
                     [
                         [-0.15483856201171872, 51.527329038465936],
                         [-0.16977310180664062, 51.51643437722083],
@@ -146,12 +189,33 @@ const geoJsonData = {
                         [-0.19303756713867188, 51.53106680201548],
                         [-0.19303756713867188, 51.53106680201548],
                     ],
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     // ],
                 ],
             },
         },
     ],
 };
+
 
 function getGeojson() {
     let xhr = new XMLHttpRequest()
@@ -182,6 +246,12 @@ getGeojson()
 const geoJsonLayer = L.geoJson(null, { pmIgnore: false });
 // geoJsonLayer.addTo(map2);
 // geoJsonLayer.addData(geoJsonData);
+
+
+
+
+
+
 
 // geoJsonLayer.pm.toggleEdit({
 //     draggable: true,
@@ -217,6 +287,7 @@ map3.pm.enableDraw('Poly', {
     },
     markerStyle: markerStyle,
     cursorMarker: false,
+
     finishOn: 'dblclick',
     // finishOnDoubleClick: true,
 });
@@ -265,13 +336,29 @@ scotland.on('pm:edit', function(e) {
     console.log(e);
 });
 
+
+
+
+
+
+
+
+
 const bounds = scotland.getBounds();
 
 map3.fitBounds(bounds);
 
+
 // geoJsonLayer.addEventListener('click', function(e) {
 //     geoJsonLayer.pm.toggleEdit();
 // });
+
+
+
+
+
+
+
 
 geoJsonLayer.on('pm:edit', function(e) {
     console.log(e);
@@ -307,6 +394,7 @@ map2.on('pm:create', function(e) {
 const polygonLayer = L.polygon([[51.509, -0.08], [51.503, -0.06], [51.51, -0.047]])
     .addTo(map3)
     .addTo(map2);
+
 
 // polygonLayer.pm.toggleEdit({
 //     allowSelfIntersection: false,
@@ -355,6 +443,56 @@ map2.on('pm:drawstart', function(e) {
     });
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 polygonLayer.on('pm:vertexadded', function(e) {
     // console.log(e);
 });
@@ -397,7 +535,13 @@ const someLayer = L.geoJSON(feature);
 
 layerGroup.addLayer(someLayer);
 
+
 someLayer.addData(feature);
+
+
+
+
+
 
 layerGroup.on('pm:snap', function(e) {
     console.log('snap');

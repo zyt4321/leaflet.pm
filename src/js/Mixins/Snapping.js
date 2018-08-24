@@ -119,7 +119,6 @@ const SnapMixin = {
                     this._layerGroup.addLayer(this.markerTemp);
                 }
 
-
                 const triggerSnap = () => {
                     this._snapLatLng = snapLatLng;
                     marker.fire('pm:snap', eventInfo);

@@ -8,7 +8,11 @@ Polygons, Circles, Rectangles, LayerGroups, GeoJSON, MultiPolygons, MultiLineStr
 
 ## [Demo (click here)](https://leafletpm.now.sh)
 
-![snap at drag](https://github.com/codeofsumit/leaflet.pm-demo/blob/master/static/gifs/github-demo.gif)
+
+
+
+![Demo](https://file-hmgrhlmwxy.now.sh/leafletPM.gif)
+
 
 Need advanced features like GeoJSON Export, storing meta data and more?\
 Check out **[Geoman](https://geoman.now.sh)**.

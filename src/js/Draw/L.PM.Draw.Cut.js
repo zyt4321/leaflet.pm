@@ -1,5 +1,6 @@
 import intersect from 'turf/src/intersect';
 import difference from 'turf/src/difference';
+
 import Draw from './L.PM.Draw';
 
 Draw.Cut = Draw.Poly.extend({
@@ -31,8 +32,6 @@ Draw.Cut = Draw.Poly.extend({
                     return false;
                 }
             });
-
-
         // loop through all layers that intersect with the drawn (cutting) layer
         layers.forEach((l) => {
             try {

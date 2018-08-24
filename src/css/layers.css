@@ -63,6 +63,20 @@
   display: none;
 }
 
+.rect-style-marker,
+.rect-start-marker {
+  opacity: 0;
+}
+
+.rect-style-marker.visible,
+.rect-start-marker.visible {
+  opacity: 1 !important;
+}
+
+.hidden {
+  display: none;
+}
+
 .marker-icon-unseen,
 .marker-icon-unseen:focus {
     background-color: transparent;

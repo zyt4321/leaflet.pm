@@ -135,7 +135,7 @@ Draw.Line = Draw.extend({
     },
     hasSelfIntersection() {
         // check for self intersection of the layer and return true/false
-        const selfIntersection = kinks(this._layer.toGeoJSON(10));
+        const selfIntersection = kinks(this._layer.toGeoJSON(12));
         return selfIntersection.features.length > 0;
     },
     _syncHintLine() {
@@ -180,7 +180,7 @@ Draw.Line = Draw.extend({
         clone.addLatLng(this._hintMarker.getLatLng());
 
         // check the self intersection
-        const selfIntersection = kinks(clone.toGeoJSON(10));
+        const selfIntersection = kinks(clone.toGeoJSON(12));
         this._doesSelfIntersect = selfIntersection.features.length > 0;
 
         // change the style based on self intersection
